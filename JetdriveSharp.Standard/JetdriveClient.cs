@@ -150,16 +150,17 @@ namespace JetdriveSharp
 								if (calcedTs != null)
 								{
 									//Note that info and provider name could be null if we haven't received any info yet, so probably ignore anything where info is null...
-									args = new ChannelValuePostedEventArgs(info, providerName, calcedTs.Value, val, msg);
+									args = new ChannelValuePostedEventArgs(info, providerName, calcedTs.Value, val, channelId, msg);
 								}
 								else
 								{
-									args = new ChannelValuePostedEventArgs(info, providerName, this.Timer.Now, val, msg);
+									args = new ChannelValuePostedEventArgs(info, providerName, this.Timer.Now, val, channelId, msg);
 								}
 
+								handler(this, args);
 							}
 
-							handler(this, args);
+							
 						}
 
 						break;

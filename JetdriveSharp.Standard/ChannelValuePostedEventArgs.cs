@@ -31,13 +31,19 @@ namespace JetdriveSharp
 			get;private set;
 		}
 
-		public ChannelValuePostedEventArgs(JDChannelInfo info, String providerName, DateTime timestampUtc, float value, InboundKLHDVMessage msg)
+		public UInt16 ChanID
+		{
+			get;private set;
+		}
+
+		public ChannelValuePostedEventArgs(JDChannelInfo info, String providerName, DateTime timestampUtc, float value, UInt16 chanId, InboundKLHDVMessage msg)
 		{
 			this.ChannelInfo = info;
 			this.ProviderName = providerName;
 			this.TimestampUTC = timestampUtc;
 			this.Value = value;
 			this.Message = msg;
+			this.ChanID = chanId;
 		}
 
 

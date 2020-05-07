@@ -169,13 +169,15 @@ namespace TestClient
 			{
 				if (userState is JetdriveProvider provider)
 				{
-					JDChannelInfo info = new JDChannelInfo("Test RPM 1", JDUnit.EngineSpeed);
+					JDChannelInfo info1 = new JDChannelInfo("Test RPM 1", JDUnit.EngineSpeed);
+					JDChannelInfo info2 = new JDChannelInfo("Test Power", JDUnit.Power);
 
 					//Ensure all channels are cleared before we begin transmitting - it's possible another node had our address at one point and didn't clean up before terminating, so we want to clear that state for all other nodes before we get started.
 					provider.ClearChannels();
 
 					//Register any channels we want to transmit
-					UInt16 id = provider.RegisterChannel(info);
+					UInt16 id1 = provider.RegisterChannel(info1);
+					UInt16 id2 = provider.RegisterChannel(info2);
 
 					//Now that our channels are registered, transmit our channel info, then begin transmitting channels.
 					provider.TransmitChannelInfo();
@@ -183,7 +185,8 @@ namespace TestClient
 					int i = 0;
 					while (true)
 					{
-						provider.QueueSample(id, i++, DateTime.UtcNow);
+						provider.QueueSample(id1, i++, DateTime.UtcNow);
+						provider.QueueSample(id2, (float)i*.1f, DateTime.UtcNow);
 						Thread.Sleep(500);
 					}
 				}
