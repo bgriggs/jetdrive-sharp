@@ -6,7 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\JetdriveSharp\JetdriveSharp.csproj" />
+    <ProjectReference Include="..\JetdriveSharp.Standard\JetdriveSharp.Standard.csproj" />
   </ItemGroup>
 
 </Project>
