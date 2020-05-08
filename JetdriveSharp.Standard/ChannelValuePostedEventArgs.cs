@@ -16,7 +16,7 @@ namespace JetdriveSharp
 			get;private set;
 		}
 
-		public DateTime TimestampUTC
+		public DateTime Timestamp
 		{
 			get;private set;
 		}
@@ -36,11 +36,11 @@ namespace JetdriveSharp
 			get;private set;
 		}
 
-		public ChannelValuePostedEventArgs(JDChannelInfo info, String providerName, DateTime timestampUtc, float value, UInt16 chanId, InboundKLHDVMessage msg)
+		public ChannelValuePostedEventArgs(JDChannelInfo info, String providerName, DateTime timestamp, float value, UInt16 chanId, InboundKLHDVMessage msg)
 		{
 			this.ChannelInfo = info;
 			this.ProviderName = providerName;
-			this.TimestampUTC = timestampUtc;
+			this.Timestamp = timestamp;
 			this.Value = value;
 			this.Message = msg;
 			this.ChanID = chanId;

@@ -31,9 +31,6 @@ namespace JetdriveSharp
 			get; set;
 		}
 
-
-
-
 		/// <summary>
 		/// Track sequence numbers for each remote host
 		/// </summary>
@@ -46,7 +43,7 @@ namespace JetdriveSharp
 
 		private readonly bool transmit;
 
-		protected HighAccuracyTimer Timer
+		protected IHighAccuracyTimer Timer
 		{
 			get; private set;
 		}
@@ -78,6 +75,33 @@ namespace JetdriveSharp
 
 		public event EventHandler Stalled;
 
+
+		public JetdriveNode(NetworkPort port, bool transmit, IHighAccuracyTimer timer)
+		{
+			this.transmit = transmit;
+			this.Port = port;
+			port.MessageReceived += Port_MessageReceived;
+			this.Timer = timer;
+		}
+
+		/// <summary>
+		/// Remove a host's sequence number and time synchronization information. 
+		/// </summary>
+		/// <param name="hostId"></param>
+		public virtual void EraseHost(UInt16 hostId)
+		{
+			lock (sequenceNumbers)
+			{
+				sequenceNumbers.Remove(hostId);
+			}
+
+			lock (offsets)
+			{
+				offsets.Remove(hostId);
+			}
+		}
+
+
 		protected void Transmit(KLHDVMessage msg)
 		{
 			msg.SequenceNumber = GetNextSequenceNumber();
@@ -88,17 +112,10 @@ namespace JetdriveSharp
 		protected byte GetNextSequenceNumber()
 		{
 			//Will always start as 1
-			return (byte) (Interlocked.Increment(ref SequenceNumber) % 255);
+			return (byte) (Interlocked.Increment(ref SequenceNumber) % 256);
 		}
 
-		public JetdriveNode(NetworkPort port, bool transmit)
-		{
-			this.transmit = transmit;
-			this.Port = port;
-			port.MessageReceived += Port_MessageReceived;
-			this.Timer = new HighAccuracyTimer();
-		}
-
+	
 		public void NegotiateHostId()
 		{
 			this.HostId = 0;
@@ -146,7 +163,7 @@ namespace JetdriveSharp
 
 			KLHDVMessage msg = new KLHDVMessage(MessageKey.Ping, this.HostId, destination, payload);
 
-			this.Port.Transmit(msg);
+			Transmit(msg);
 		}
 
 
@@ -169,7 +186,7 @@ namespace JetdriveSharp
 
 			KLHDVMessage pong = new KLHDVMessage(MessageKey.Pong, this.HostId, pingMsg.Host, payload);
 
-			Port.Transmit(pong);
+			Transmit(pong);
 		}
 
 		private void HandlePong(KLHDVMessage pongMsg)
@@ -191,7 +208,7 @@ namespace JetdriveSharp
 
 					UInt32 latency = (currentTime - host_ts) / 2;
 
-					long offset = currentTime - remote_ts;
+					long offset = (long)currentTime - (long)remote_ts;
 
 					if (offsets.TryGetValue(pongMsg.Host, out OffsetInfo existingOffset))
 					{
@@ -255,16 +272,17 @@ namespace JetdriveSharp
 					{
 						if (sequenceNumbers.TryGetValue(args.Message.Host, out byte seq))
 						{
+							byte expectedSeqNum = (byte)(seq + 1);
 
-							if (args.Message.SequenceNumber == seq + 1)
+							if (args.Message.SequenceNumber == expectedSeqNum)
 							{
 								//OK
 							}
-							else if (args.Message.SequenceNumber > seq + 1)
+							else if (args.Message.SequenceNumber > expectedSeqNum)
 							{
 								flags |= SequenceNumberFlags.PREVIOUS_MESSAGES_DROPPED;
 							}
-							else if (args.Message.SequenceNumber < seq + 1)
+							else if (args.Message.SequenceNumber < expectedSeqNum)
 							{
 								flags |= SequenceNumberFlags.OUT_OF_ORDER;
 							}

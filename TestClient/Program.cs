@@ -41,7 +41,7 @@ namespace TestClient
 				//Just a random number so we can identify each test provider during this debug program
 				int providerNum = new Random().Next(1, 256);
 
-				using (JetdriveProvider provider = new JetdriveProvider(true, port1, $"Test Provider {providerNum}"))
+				using (JetdriveProvider provider = new JetdriveProvider(true, port1, $"Test Provider {providerNum}", new HighAccuracyTimer()))
 				{
 					//The first thing we need to do is discover other hosts and ensure that we randomly generate a host id that doesn't already exist.
 					provider.NegotiateHostId();
@@ -185,9 +185,9 @@ namespace TestClient
 					int i = 0;
 					while (true)
 					{
-						provider.QueueSample(id1, i++, DateTime.UtcNow);
-						provider.QueueSample(id2, (float)i*.1f, DateTime.UtcNow);
-						Thread.Sleep(500);
+						provider.QueueSample(id1, i++, DateTime.Now);
+						provider.QueueSample(id2, (float)i*.1f, DateTime.Now);
+						Thread.Sleep(100);
 					}
 				}
 			}, _provider);
@@ -198,11 +198,11 @@ namespace TestClient
 		{
 			if (e.ChannelInfo != null) // If channel info is null, the provider hasn't transmitted channel info yet.
 			{
-				Console.WriteLine($"{e.ProviderName}.{e.ChannelInfo.channelName}\t=\t{e.Value:F4} {e.ChannelInfo.unit}\t @ {e.TimestampUTC.ToLocalTime():HH:mm:ss:fff}\tFlags={e.Message.Flags}");
+				Console.WriteLine($"{e.ProviderName}.{e.ChannelInfo.channelName}\t=\t{e.Value:F4} {e.ChannelInfo.unit}\t @ {e.Timestamp:HH:mm:ss:fff}\tFlags={e.Message.Flags}");
 			}
 			else
 			{
-				Console.WriteLine($"?? {e.Value} \t @ {e.TimestampUTC.ToLocalTime().ToShortTimeString()}");
+				Console.WriteLine($"?? {e.Value} \t @ {e.Timestamp.ToShortTimeString()}");
 			}
 		}
 

@@ -32,7 +32,7 @@ namespace JetdriveSharp
 			get;private set;
 		}
 
-		public JetdriveProvider(bool receiveChannels, NetworkPort port, String providerName) : base(port, true)
+		public JetdriveProvider(bool receiveChannels, NetworkPort port, String providerName, IHighAccuracyTimer timer) : base(port, true, timer)
 		{
 			this.ReceiveChannels = receiveChannels;
 			this.Name = providerName;

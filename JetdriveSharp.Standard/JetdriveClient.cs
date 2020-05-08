@@ -40,7 +40,7 @@ namespace JetdriveSharp
 		/// </summary>
 		public event ClearChannelsHandler ChannelsCleared;
 
-		public JetdriveClient(NetworkPort port, bool transmit) : base(port, transmit)
+		public JetdriveClient(NetworkPort port, bool transmit, IHighAccuracyTimer timer) : base(port, transmit, timer)
 		{
 		}
 
@@ -52,6 +52,16 @@ namespace JetdriveSharp
 		{
 			KLHDVMessage msg = new KLHDVMessage(MessageKey.RequestChannelInfo, this.HostId, dstHost, new byte[0]);
 			Transmit(msg);
+		}
+
+		/// <summary>
+		/// Removes a host's channel data (which fires the ChannelsCleared event), then calls JetdriveNode.EraseHost
+		/// </summary>
+		/// <param name="hostId"></param>
+		public override void EraseHost(ushort hostId)
+		{
+			ClearChannelInfo(hostId);
+			base.EraseHost(hostId);
 		}
 
 
@@ -167,23 +177,27 @@ namespace JetdriveSharp
 					}
 					case MessageKey.ClearChannelInfo: // Clear a host from the channel info cache
 					{
-						String hostname = null;
-						lock (registeredChannels)
-						{
-							this.providerNames.TryGetValue(msg.Host, out hostname);
-							registeredChannels.Remove(msg.Host);
-							providerNames.Remove(msg.Host);
-						}
-
-						if (ChannelsCleared is ClearChannelsHandler handler)
-						{
-							handler(this, new ClearChannelsEventArgs(msg.Host, hostname));
-						}
-
+						ClearChannelInfo(msg.Host);
 
 						break;
 					}
 				}
+			}
+		}
+
+		private void ClearChannelInfo(UInt16 hostId)
+		{
+			String hostname = null;
+			lock (registeredChannels)
+			{
+				this.providerNames.TryGetValue(hostId, out hostname);
+				registeredChannels.Remove(hostId);
+				providerNames.Remove(hostId);
+			}
+
+			if (ChannelsCleared is ClearChannelsHandler handler)
+			{
+				handler(this, new ClearChannelsEventArgs(hostId, hostname));
 			}
 		}
 	}
