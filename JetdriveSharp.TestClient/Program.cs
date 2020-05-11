@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
@@ -7,12 +8,18 @@ using System.Threading;
 using JetdriveSharp;
 using JetdriveSharp.Utils;
 
-namespace TestClient
+namespace JetdriveSharp.TestClient
 {
 	class Program
 	{
+		static JetdriveProvider provider;
+
+		static volatile bool exit = false;
+
 		static void Main(string[] args)
 		{
+			Console.CancelKeyPress += Console_CancelKeyPress;
+
 			Console.WriteLine($"JETDRIVE Demo App, V1.0, JETDRIVE V{JetdriveNode.JETDRIVE_VERSION}");
 
 			IPAddress mcastIfaceAddr;
@@ -41,7 +48,7 @@ namespace TestClient
 				//Just a random number so we can identify each test provider during this debug program
 				int providerNum = new Random().Next(1, 256);
 
-				using (JetdriveProvider provider = new JetdriveProvider(true, port1, $"Test Provider {providerNum}", new HighAccuracyTimer()))
+				using ((provider = new JetdriveProvider(true, port1, $"Test Provider {providerNum}", new HighAccuracyTimer())))
 				{
 					//The first thing we need to do is discover other hosts and ensure that we randomly generate a host id that doesn't already exist.
 					provider.NegotiateHostId();
@@ -64,7 +71,7 @@ namespace TestClient
 					//Main transmit loop for a provider.
 					DateTime lastValuesTime = DateTime.MinValue;
 					DateTime lastChanInfosTime = DateTime.MinValue;
-					while (true)
+					while (!exit)
 					{
 						//Transmit channel info every 30 seconds as per the spec!
 						if (DateTime.UtcNow - lastChanInfosTime >= TimeSpan.FromSeconds(30))
@@ -98,6 +105,20 @@ namespace TestClient
 						}
 					}
 				}
+			}
+		}
+
+		private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
+		{
+			if (!exit)
+			{
+				e.Cancel = true;
+				Console.WriteLine("Terminating.... (Cancel again to kill process)");
+				exit = true;
+			}
+			else
+			{
+				Process.GetCurrentProcess().Kill();
 			}
 		}
 
@@ -186,7 +207,7 @@ namespace TestClient
 					while (true)
 					{
 						provider.QueueSample(id1, i++, DateTime.Now);
-						provider.QueueSample(id2, (float)i*.1f, DateTime.Now);
+						provider.QueueSample(id2, (float)i * .1f, DateTime.Now);
 						Thread.Sleep(100);
 					}
 				}
