@@ -1,4 +1,23 @@
-﻿using System;
+﻿/*
+ 
+   Copyright 2020 Dynojet Research Inc
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+
+ */
+
+
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
@@ -25,30 +44,33 @@ namespace JetdriveSharp.TestClient
 			IPAddress mcastIfaceAddr;
 			if (!NetworkUtils.TryGetBestLocalIFAddr(out mcastIfaceAddr))
 			{
-				Console.WriteLine("Automatic IP address selection failed, reverting to manual selection.");
+				//Most people will probably be running apps on the same machine, especially if they're not connected to the internet.
+				Console.WriteLine("Automatic IP address selection failed, reverting to loopback.");
+				mcastIfaceAddr = IPAddress.Loopback;
 
+				//Alternatively, allow the user to manually choose an interface's IP address.
+				
 				//List all addresses on all interfaces and allow the user to choose...
-				if (!TryManualIPSelection(out mcastIfaceAddr))
-				{
-					Console.WriteLine("No address selected, exiting program.");
-					return;
-				}
+				//if (!TryManualIPSelection(out mcastIfaceAddr))
+				//{
+				//	Console.WriteLine("No address selected, exiting program.");
+				//	return;
+				//}
 			}
 
 			Console.WriteLine($"Using IP address: {mcastIfaceAddr}");
 
-			using (NetworkPort port1 = new NetworkPort())
+			//Create our interface to the local network.
+			using (NetworkPort netPort = new NetworkPort())
 			{
 				//Join our multicast group!
-				port1.Join(mcastIfaceAddr);
+				netPort.Join(mcastIfaceAddr);
 
 				//Start listening for incoming traffic.
-				port1.StartListening();
+				netPort.StartListening();
 
-				//Just a random number so we can identify each test provider during this debug program
-				int providerNum = new Random().Next(1, 256);
 
-				using ((provider = new JetdriveProvider(true, port1, $"Test Provider {providerNum}", new HighAccuracyTimer())))
+				using ((provider = new JetdriveProvider(true, netPort, $"JETDRIVE Demo Provider", new HighAccuracyTimer())))
 				{
 					//The first thing we need to do is discover other hosts and ensure that we randomly generate a host id that doesn't already exist.
 					provider.NegotiateHostId();
@@ -81,6 +103,7 @@ namespace JetdriveSharp.TestClient
 						}
 
 						//Transmit channel values however often you want - I wouldn't recommend going slower than 10hz though as slower values will appear kinda jerky on gauges and might make any realtime code perform poorly if it expects frequent updates.
+						//We also recommend ONLY transmitting values when a new sample has been physically taken, rather than repeating the values at a fixed rate even if they haven't been updated - this prevents stair-stepping on graphs and allows interpolation between changing sample points.
 						if (DateTime.UtcNow - lastValuesTime >= TimeSpan.FromMilliseconds(50))
 						{
 							bool transmitAgain = false;
@@ -208,7 +231,7 @@ namespace JetdriveSharp.TestClient
 					{
 						provider.QueueSample(id1, i++, DateTime.Now);
 						provider.QueueSample(id2, (float)i * .1f, DateTime.Now);
-						Thread.Sleep(100);
+						Thread.Sleep(100); // Generate new samples at roughly 10hz
 					}
 				}
 			}, _provider);
@@ -242,7 +265,6 @@ namespace JetdriveSharp.TestClient
 				{
 					Console.WriteLine("Error: Cannot communicate on this JETDRIVE network, at least one other node exists with an incompatible version.");
 				}
-
 			}
 		}
 	}
