@@ -29,4 +29,4 @@ jobs:
       - name: Create the package
         run: dotnet pack JetdriveSharp/JetdriveSharp.csproj --configuration Release
       - name: Publish the package to Nuget
-        run: dotnet nuget push JetdriveSharp/bin/Release/*.nupkg -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push JetdriveSharp\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json
