@@ -20,8 +20,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
-        env:
-          NUGET_AUTH_TOKEN: ${{secrets.NUGET_TOKEN}}
       - name: Restore dependencies
         run: dotnet restore
       - name: Build
@@ -29,4 +27,4 @@ jobs:
       - name: Create the package
         run: dotnet pack JetdriveSharp/JetdriveSharp.csproj --configuration Release
       - name: Publish the package to Nuget
-        run: dotnet nuget push JetdriveSharp\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json
+        run: dotnet nuget push JetdriveSharp\bin\Release\*.nupkg -s https://api.nuget.org/v3/index.json --api-key ${{secrets.NUGET_TOKEN}}
