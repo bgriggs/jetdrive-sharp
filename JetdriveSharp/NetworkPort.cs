@@ -15,120 +15,125 @@
    limitations under the License.
 
  */
-using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
-namespace JetdriveSharp
+namespace JetdriveSharp;
+
+public delegate void KLHDVMessageReceivedEventHandler(object sender, KLHDVMessageReceivedArgs args);
+
+public class NetworkPort : IDisposable
 {
-	public delegate void KLHDVMessageReceivedEventHandler(Object sender, KLHDVMessageReceivedArgs args);
+    private UdpClient? client;
 
-	public class NetworkPort : IDisposable
-	{
-		private UdpClient client;
+    private const ushort PORT = 22344;
+    private static readonly IPAddress mcastAddr = IPAddress.Parse("224.0.2.10"); // multicast address, subject to change, not set in stone yet.
 
-		private const ushort PORT = 22344; 
-		private static readonly IPAddress mcastAddr = IPAddress.Parse("224.0.2.10"); // multicast address, subject to change, not set in stone yet.
+    /// <summary>
+    /// Fired whenever a KLHDV message is successfully received and decoded
+    /// </summary>
+    public event KLHDVMessageReceivedEventHandler? MessageReceived;
 
-		/// <summary>
-		/// Fired whenever a KLHDV message is successfully received and decoded
-		/// </summary>
-		public event KLHDVMessageReceivedEventHandler MessageReceived;
+    /// <summary>
+    /// Join the multicast group to allow receipt of messages
+    /// </summary>
+    /// <param name="ifaceAddr"></param>
+    public void Join(IPAddress ifaceAddr)
+    {
+        ArgumentNullException.ThrowIfNull(ifaceAddr);
 
-		/// <summary>
-		/// Join the multicast group to allow receipt of messages
-		/// </summary>
-		/// <param name="ifaceAddr"></param>
-		public void Join(IPAddress ifaceAddr)
-		{
-			if (ifaceAddr is null)
-			{
-				throw new ArgumentNullException(nameof(ifaceAddr));
-			}
+        if (client != null)
+        {
+            throw new InvalidOperationException($"Cannot join the same client multiple times! Create a new {nameof(NetworkPort)} to rejoin.");
+        }
 
-			if (client != null)
-			{
-				throw new InvalidOperationException($"Cannot join the same client multiple times! Create a new {nameof(NetworkPort)} to rejoin.");
-			}
+        //Join mcast group
+        client = new UdpClient();
 
-			//Join mcast group
-			client = new UdpClient();
-			
-			//This is critical to all implementations! If you don't set this socket option, other hosts on the same machine won't be able to join jetdrive. (Or your program won't be able to join if another app is already running)
-			client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+        //This is critical to all implementations! If you don't set this socket option, other hosts on the same machine won't be able to join jetdrive. (Or your program won't be able to join if another app is already running)
+        client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
 
-			//Try and bind do the endpoint...
-			client.Client.Bind(new IPEndPoint(ifaceAddr, PORT));
+        //Try and bind do the endpoint...
+        client.Client.Bind(new IPEndPoint(ifaceAddr, PORT));
 
-			//Join a multicast group for a specific interface
-			client.JoinMulticastGroup(mcastAddr, ifaceAddr);
-		}
+        //Join a multicast group for a specific interface
+        client.JoinMulticastGroup(mcastAddr, ifaceAddr);
+    }
 
-		/// <summary>
-		/// Start asynchronously receiving messages. Note that messages received will be on worker threads, so don't assume a single thread for the OnMessage event.
-		/// </summary>
-		public void StartListening()
-		{
-			BeginReceive(client);
-		}
+    /// <summary>
+    /// Start asynchronously receiving messages. Note that messages received will be on worker threads, so don't assume a single thread for the OnMessage event.
+    /// </summary>
+    public void StartListening()
+    {
+        if (client == null)
+        {
+            throw new InvalidOperationException($"Cannot start listening without joining a multicast group first!");
+        }
+        BeginReceive(client);
+    }
 
-		private void BeginReceive(UdpClient client)
-		{
-			client.BeginReceive(new AsyncCallback(UdpOnReceive), client);
-		}
+    private void BeginReceive(UdpClient client)
+    {
+        client.BeginReceive(new AsyncCallback(UdpOnReceive), client);
+    }
 
-		private void UdpOnReceive(IAsyncResult ar)
-		{
-			if (ar != null)
-			{
-				try
-				{
-					UdpClient client = (UdpClient)ar.AsyncState;
+    private void UdpOnReceive(IAsyncResult ar)
+    {
+        if (ar != null)
+        {
+            try
+            {
+                if (ar.AsyncState is not UdpClient client)
+                {
+                    return;
+                }
 
-					IPEndPoint endpoint = null;
-					byte[] receiveBytes = client.EndReceive(ar, ref endpoint);
+                IPEndPoint? endpoint = null;
+                byte[] receiveBytes = client.EndReceive(ar, ref endpoint);
 
-					//Try and decode KLHDV message.
-					InboundKLHDVMessage msg = InboundKLHDVMessage.Decode(receiveBytes, 0);
+                if (MessageReceived is KLHDVMessageReceivedEventHandler handler)
+                {
+                    //Try and decode KLHDV message.
+                    var msg = InboundKLHDVMessage.Decode(receiveBytes, 0);
 
-					//Console.WriteLine($"Received message from 0x{msg.Host:X4} : {msg.Key}");
+                    //Console.WriteLine($"Received message from 0x{msg.Host:X4} : {msg.Key}");
 
-					if (MessageReceived is KLHDVMessageReceivedEventHandler handler)
-					{
-						handler(this, new KLHDVMessageReceivedArgs(msg));
-					}
+                    handler(this, new KLHDVMessageReceivedArgs(msg));
+                }
 
-					BeginReceive(client);
+                BeginReceive(client);
+            }
+            catch (Exception x)
+            {
+                Console.WriteLine($"Network Port Error: {x}");
+                //Handle network RX error...
+            }
+        }
+        else
+        {
+            //This should never happen
+        }
+    }
 
-				}
-				catch (Exception x)
-				{
-					Console.WriteLine($"Network Port Error: {x}");
-					//Handle network RX error...
-				}
-			}
-			else
-			{
-				//This should never happen
-			}
-		}
+    public void Transmit(KLHDVMessage msg)
+    {
+        if (client == null)
+        {
+            throw new InvalidOperationException($"Cannot transmit without joining a multicast group first!");
+        }
 
-		public void Transmit(KLHDVMessage msg)
-		{
-			//Convert KLHDV message to binary and transmit
-			byte[] data = msg.Encode();
-			client.Send(data, data.Length, new IPEndPoint(mcastAddr, PORT));
-		}
+        //Convert KLHDV message to binary and transmit
+        byte[] data = msg.Encode();
+        client.Send(data, data.Length, new IPEndPoint(mcastAddr, PORT));
+    }
 
-		public void Dispose()
-		{
-			if (client != null)
-			{
-				client.DropMulticastGroup(mcastAddr);
-				client.Dispose();
-			}
-		}
-	}
+    public void Dispose()
+    {
+        GC.SuppressFinalize(this);
+        if (client != null)
+        {
+            client.DropMulticastGroup(mcastAddr);
+            client.Dispose();
+        }
+    }
 }

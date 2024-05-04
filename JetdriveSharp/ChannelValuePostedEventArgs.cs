@@ -15,55 +15,37 @@
    limitations under the License.
 
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace JetdriveSharp;
 
-namespace JetdriveSharp
+public class ChannelValuePostedEventArgs(JDChannelInfo? info, string? providerName, DateTime timestamp, float value, ushort chanId, InboundKLHDVMessage msg) : EventArgs
 {
-	public class ChannelValuePostedEventArgs : EventArgs
-	{
-		public JDChannelInfo ChannelInfo
-		{
-			get;private set;
-		}
+    public JDChannelInfo? ChannelInfo
+    {
+        get; private set;
+    } = info;
 
-		public String ProviderName
-		{
-			get;private set;
-		}
+    public string? ProviderName
+    {
+        get; private set;
+    } = providerName;
 
-		public DateTime Timestamp
-		{
-			get;private set;
-		}
+    public DateTime Timestamp
+    {
+        get; private set;
+    } = timestamp;
 
-		public float Value
-		{
-			get;private set;
-		}
+    public float Value
+    {
+        get; private set;
+    } = value;
 
-		public InboundKLHDVMessage Message
-		{
-			get;private set;
-		}
+    public InboundKLHDVMessage Message
+    {
+        get; private set;
+    } = msg;
 
-		public UInt16 ChanID
-		{
-			get;private set;
-		}
-
-		public ChannelValuePostedEventArgs(JDChannelInfo info, String providerName, DateTime timestamp, float value, UInt16 chanId, InboundKLHDVMessage msg)
-		{
-			this.ChannelInfo = info;
-			this.ProviderName = providerName;
-			this.Timestamp = timestamp;
-			this.Value = value;
-			this.Message = msg;
-			this.ChanID = chanId;
-		}
-
-
-
-	}
+    public UInt16 ChanID
+    {
+        get; private set;
+    } = chanId;
 }

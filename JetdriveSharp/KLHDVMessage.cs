@@ -15,114 +15,102 @@
    limitations under the License.
 
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace JetdriveSharp;
 
-namespace JetdriveSharp
+public class KLHDVMessage
 {
-	public class KLHDVMessage
+	protected KLHDVMessage()
 	{
-		protected KLHDVMessage()
-		{
 
+	}
+
+	public KLHDVMessage(MessageKey key, ushort host, ushort destination, byte[] value)
+	{
+        ArgumentNullException.ThrowIfNull(value);
+
+        this.Key = key;
+		this.Host = host;
+		this.Destination = destination;
+		this.Value = value;
+	}
+
+
+	public MessageKey Key
+	{
+		get; protected set;
+	}	
+
+	public int Length
+	{
+		get
+		{
+			return this.Value?.Length ?? 0;
 		}
+	}
 
-		public KLHDVMessage(MessageKey key, UInt16 host, UInt16 destination, byte[] value)
-		{
-			if (value is null)
-			{
-				throw new ArgumentNullException(nameof(value));
-			}
+	public ushort Host
+	{
+		get; protected set;
+	}
 
-			this.Key = key;
-			this.Host = host;
-			this.Destination = destination;
-			this.Value = value;
-		}
+	public byte SequenceNumber
+	{
+		get;internal set;
+	}
 
-
-		public MessageKey Key
-		{
-			get; protected set;
-		}	
-
-		public int Length
-		{
-			get
-			{
-				return this.Value.Length;
-			}
-		}
-
-		public UInt16 Host
-		{
-			get; protected set;
-		}
-
-		public byte SequenceNumber
-		{
-			get;internal set;
-		}
-
-		public UInt16 Destination
-		{
-			get; protected set;
-		}
+	public ushort Destination
+	{
+		get; protected set;
+	}
 
 
-		public byte[] Value
-		{
-			get; protected set;
-		}
-		
+	public byte[]? Value
+	{
+		get; protected set;
+	}
+	
 
-		public int CalcEncodedSize()
-		{
-			return sizeof(MessageKey) // KEY
-				+ sizeof(UInt16) //LENGTH FIELD
-				+ sizeof(UInt16) // HOST FIELD
-				+ sizeof(byte)	//SEQUENCE FIELD
-				+ sizeof(UInt16) // DESTINATION FIELD
-				+ this.Length;	//Value length
-		}
+	public int CalcEncodedSize()
+	{
+		return sizeof(MessageKey) // KEY
+			+ sizeof(ushort) //LENGTH FIELD
+			+ sizeof(ushort) // HOST FIELD
+			+ sizeof(byte)	//SEQUENCE FIELD
+			+ sizeof(ushort) // DESTINATION FIELD
+			+ this.Length;	//Value length
+	}
 
-		public byte[] Encode()
-		{
-			byte[] data = new byte[CalcEncodedSize()];
-			Encode(data, 0);
-			return data;
-		}
-
-
-		public void Encode(byte[] dst, int dstOffset)
-		{
-
-			int idx = 0;
-
-			//KEY
-			dst[dstOffset + idx++] = (byte)this.Key;
-
-			//LENGTH
-			BitConverter.GetBytes(this.Length).CopyTo(dst, dstOffset + idx);
-			idx += sizeof(UInt16);
-
-			//HOST
-			BitConverter.GetBytes(this.Host).CopyTo(dst, dstOffset + idx);
-			idx += sizeof(UInt16);
-
-			//SEQ NUM
-			dst[dstOffset + idx++] = this.SequenceNumber;
-
-			//DESTINATION HOST
-			BitConverter.GetBytes(this.Destination).CopyTo(dst, dstOffset + idx);
-			idx += sizeof(UInt16);
-
-			//Value data
-			Buffer.BlockCopy(this.Value, 0, dst, dstOffset + idx, this.Value.Length);
-
-		}
+	public byte[] Encode()
+	{
+		byte[] data = new byte[CalcEncodedSize()];
+		Encode(data, 0);
+		return data;
+	}
 
 
+	public void Encode(byte[] dst, int dstOffset)
+	{
+		int idx = 0;
+
+		//KEY
+		dst[dstOffset + idx++] = (byte)this.Key;
+
+		//LENGTH
+		BitConverter.GetBytes(this.Length).CopyTo(dst, dstOffset + idx);
+		idx += sizeof(ushort);
+
+		//HOST
+		BitConverter.GetBytes(this.Host).CopyTo(dst, dstOffset + idx);
+		idx += sizeof(ushort);
+
+		//SEQ NUM
+		dst[dstOffset + idx++] = this.SequenceNumber;
+
+		//DESTINATION HOST
+		BitConverter.GetBytes(this.Destination).CopyTo(dst, dstOffset + idx);
+		idx += sizeof(ushort);
+
+		//Value data
+		Buffer.BlockCopy(this.Value ?? [], 0, dst, dstOffset + idx, this.Value?.Length ?? 0);
 	}
 }

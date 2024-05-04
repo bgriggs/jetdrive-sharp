@@ -15,31 +15,19 @@
    limitations under the License.
 
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace JetdriveSharp;
 
-namespace JetdriveSharp
+public delegate void ClearChannelsHandler(object sender, ClearChannelsEventArgs e);
+
+public class ClearChannelsEventArgs(ushort hostId, string? hostName) : EventArgs
 {
-	public delegate void ClearChannelsHandler(Object sender, ClearChannelsEventArgs e);
+    public ushort HostId
+    {
+        get; private set;
+    } = hostId;
 
-	public class ClearChannelsEventArgs : EventArgs
-	{
-		public UInt16 HostId
-		{
-			get;private set;
-		}
-
-		public String HostName
-		{
-			get;private set;
-		}
-
-		public ClearChannelsEventArgs(UInt16 hostId, String hostName)
-		{
-			this.HostId = hostId;
-			this.HostName = hostName;
-		}
-
-	}
+    public string? HostName
+    {
+        get; private set;
+    } = hostName;
 }

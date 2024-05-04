@@ -15,22 +15,12 @@
    limitations under the License.
 
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace JetdriveSharp;
 
-namespace JetdriveSharp
+public class KLHDVMessageReceivedArgs(InboundKLHDVMessage msg) : EventArgs
 {
-	public class KLHDVMessageReceivedArgs : EventArgs
-	{
-		public InboundKLHDVMessage Message
-		{
-			get; private set;
-		}
-
-		public KLHDVMessageReceivedArgs(InboundKLHDVMessage msg)
-		{
-			this.Message = msg;
-		}
-	}
+    public InboundKLHDVMessage Message
+    {
+        get; private set;
+    } = msg;
 }

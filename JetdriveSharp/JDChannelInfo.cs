@@ -15,29 +15,22 @@
    limitations under the License.
 
  */
-using System;
-using System.Collections.Generic;
-using System.Text;
+namespace JetdriveSharp;
 
-namespace JetdriveSharp
+public class JDChannelInfo
 {
-	public class JDChannelInfo
+	public byte vendor_specific;
+	public string channelName = string.Empty;
+	public JDUnit unit;
+
+	public JDChannelInfo(string channelName, JDUnit unit)
 	{
-		public byte vendor_specific;
-		public String channelName;
-		public JDUnit unit;
+		this.vendor_specific = 0;
+		this.channelName = channelName;
+		this.unit = unit;
+	}
 
-		public JDChannelInfo(String channelName, JDUnit unit)
-		{
-			this.vendor_specific = 0;
-			this.channelName = channelName;
-			this.unit = unit;
-		}
-
-		public JDChannelInfo()
-		{
-		}
-
-
+	public JDChannelInfo()
+	{
 	}
 }
