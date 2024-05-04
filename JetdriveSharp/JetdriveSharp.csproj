@@ -7,7 +7,6 @@
 		<Version>1.0.2.0</Version>
 		<IncludeSymbols>True</IncludeSymbols>
 		<RepositoryUrl>https://github.com/bgriggs/jetdrive-sharp</RepositoryUrl>
-		<IncludeSymbols>True</IncludeSymbols>
 		<Title>Jetdrive Sharp</Title>
 		<Description>Dynojet jetdrive sdk.</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
